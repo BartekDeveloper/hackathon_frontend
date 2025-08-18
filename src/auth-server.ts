@@ -11,11 +11,12 @@ interface AdapterConfig {
   usePlural?: boolean;
 }
 
-const BACKEND_URI = process.env.NEXT_PUBLIC_BACKEND_URI ?? "127.0.0.1:8080";
+const BACKEND_URI = "/backend";
+const WEBSITE_URL = process.env.NEXT_PUBLIC_URL || "127.0.0.1:3000";
 
 const makeApiCall = async (endpoint, data) => {
   try {
-    const response = await fetch(`http://${BACKEND_URI}${endpoint}`, {
+    const response = await fetch(`${WEBSITE_URL}${BACKEND_URI}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -23,8 +24,7 @@ const makeApiCall = async (endpoint, data) => {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API call failed: ${response.status} - ${errorText}`);
+      throw new Error(`API call failed: ${response.status} - ${response.statusText}`);
     }
     return await response.json();
   } catch (error) {
