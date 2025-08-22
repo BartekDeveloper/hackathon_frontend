@@ -11,22 +11,33 @@ interface AdapterConfig {
   usePlural?: boolean;
 }
 
-const BACKEND_URI = "/backend";
+const BACKEND_URL = "http://127.0.0.1:8080";
 const WEBSITE_URL = process.env.NEXT_PUBLIC_URL || "127.0.0.1:3000";
 
 const makeApiCall = async (endpoint, data) => {
   try {
-    const response = await fetch(`${WEBSITE_URL}${BACKEND_URI}${endpoint}`, {
+    const body = JSON.stringify(data);
+    // console.log(body);
+
+    const url = `${BACKEND_URL}${endpoint}`;
+    // console.log(url);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: body,
+      redirect: "follow"
     });
+    
+    const ret = await response.json();
+
     if (!response.ok) {
-      throw new Error(`API call failed: ${response.status} - ${response.statusText}`);
+      throw new Error(`API call failed: ${response.status} - ${response.statusText}:\t${ret?.error || ""}`);
     }
-    return await response.json();
+
+    return ret
   } catch (error) {
     console.error("API call error:", error);
     throw error;
@@ -70,25 +81,25 @@ const goBackendAdapter = () => createAdapter({
        * Deletes multiple documents.
        */
       deleteMany: async({ model, where, }) => {
-        return makeApiCall("/deleteMany", { model, where });
+        return makeApiCall("/delete-many", { model, where });
       },
 
       /**
        * Finds multiple documents based on a query.
        */
       findMany: async({ model, where, limit, sortBy, offset, }) => {
-        return makeApiCall("/findMany", { model, where, limit, sortBy, offset });
+        return makeApiCall("/find-many", { model, where, limit, sortBy, offset });
       },
 
       /**
        * Finds a single document based on a query.
        */
-      findOne: async({ model, where, select, }) => {
-        console.log("~-~ Find One ~-~");
-        console.log("Model:", model);
-        console.log("Where:", where);
-        console.log("Select:", select);
-        return makeApiCall("/findOne", { model, where, select });
+      findOne: async({ model, where, select }) => {
+        const result = await makeApiCall("/find-one", { model, where, select });
+        if (result && result.error === "empty") {
+          return null; // Return null if the backend indicates no record found
+        }
+        return result;
       },
 
       /**
@@ -102,14 +113,14 @@ const goBackendAdapter = () => createAdapter({
        * Updates multiple documents.
        */
       updateMany: async({ model, where, update }) => {
-        return makeApiCall("/updateMany", { model, where, update });
+        return makeApiCall("/update-many", { model, where, update });
       },
 
       /**
        * Creates or updates the database schema.
        */
       createSchema: async(props) => {
-        return makeApiCall("/createSchema", props);
+        return makeApiCall("/create-schema", props);
       },
     }
   }
@@ -120,16 +131,7 @@ export const auth = betterAuth({
         enabled: true,
         async sendResetPassword(data, request) {}
     },
-    socialProviders: {
-        linkedin: {
-            clientId:     process.env.LINKEDIN_CLIENT_ID,
-            clientSecret: process.env.LINKEDIN_CLIENT_SECRET
-        },
-        microsoft: {
-            clientId:     process.env.MICROSOFT_CLIENT_ID,
-            clientSecret: process.env.MICROSOFT_CLIENT_SECRET
-        }
-    },
+    socialProviders: {},
     plugins: [
         passkey(),
     ],
