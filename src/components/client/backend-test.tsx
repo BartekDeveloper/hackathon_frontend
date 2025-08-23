@@ -4,14 +4,18 @@ import React, { useEffect, useState } from "react";
 import { DisplayObject } from "../server/Utils";
 
 const BackendTest = () => {
-    const { data, loading, error } = useBackend("/backend/");
+    const {
+        data:    testData,
+        loading: testLoad,
+        error:   testError
+    } = useBackend("/backend/");
 
     return (
         <>
-            { loading && <div>Loading...</div>}
-            { error && <div>Error! {error} </div> }
+            { testLoad && <div>Loading...</div>}
+            { testError && <div>Error! {testError} </div> }
             <DisplayObject
-                data={data?.data}
+                data={testData?.data}
                 Out={({d, i}) => (
                     <div>
                         {i}{" "}
